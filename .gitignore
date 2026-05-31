@@ -60,3 +60,15 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+fastlane.log
+
+# Avatar generation output (regenerate with scripts/avatar-generation/generate.py)
+generated-avatars/
+toogether/generated-avatars/
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment files (may contain API keys)
+.env

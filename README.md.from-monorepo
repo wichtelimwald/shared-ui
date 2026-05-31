@@ -1,0 +1,183 @@
+# AssistanceKit – Shared UI Components
+
+Shared Swift Package providing reusable UI components and design tokens used
+across multiple iOS app projects in the `assistance` mono-repo.
+
+## Components
+
+### ⭐ Markdown Editor (Internal Product)
+
+The Markdown module is AssistanceKit's primary "internal product" — a powerful, easy-to-use
+Markdown editor designed for embedding in any app. See [Architecture Concept](docs/concepts/markdown-editor-architecture.md).
+
+| Component | Description |
+|-----------|-------------|
+| `MarkdownEditorView` | Live Markdown editor with syntax highlighting and context-menu formatting (iOS) |
+| `MarkdownDocumentView` | Read-only Obsidian-style block renderer (headings, lists, quotes, images) |
+| `MarkdownText` | Inline Markdown renderer (bold, italic, code, strikethrough, links) |
+| `MarkdownBlockParser` | Markdown → structured blocks parser (pure logic, no UI deps) |
+| `MarkdownSectionParser` | Split/join Markdown at `## ` headings for section editing |
+| `MarkdownTextStorage` | `NSTextStorage` subclass with regex-based syntax highlighting |
+| `MarkdownTheme` | Colour configuration (hex strings, Codable, Sendable, light/dark presets) |
+
+### UI Components
+
+| Component | Description |
+|-----------|-------------|
+| `CoverFlow` | 3D card carousel with gesture scrolling, tap, double-tap, and drag-out |
+| `CoverFlowKernel` | Platform-independent logic for scroll position, hit-testing, and insertion |
+| `GlassOverlayScaffold` | Full-screen glass overlay with title bar, content, and action bar |
+| `ActionButton` | Glassmorphic circle button with SF Symbol |
+| `ScaledButtonStyle` | Press-to-scale button style |
+| `BackgroundPicture` | Full-bleed background image |
+| `NeonTextStyle` | Multi-layered neon glow text/view effect |
+| `AnimationDuration` | Centralized timing constants |
+| `SpringPreset` | Centralized spring animation presets |
+
+## Usage
+
+### Adding to an Xcode Project
+
+1. Open your project in Xcode
+2. **File → Add Package Dependencies…**
+3. Click **Add Local…** and navigate to `shared-ui/`
+4. Select the `AssistanceKit` library and add it to your app target
+
+### Importing
+
+```swift
+import AssistanceKit
+
+// Markdown Editor (live editing with syntax highlighting)
+MarkdownEditorView(text: $markdownText)
+
+// Markdown Editor with custom theme
+MarkdownEditorView(text: $markdownText, theme: .defaultDark, minHeight: 200)
+
+// Markdown Document (read-only, Obsidian-style rendering)
+MarkdownDocumentView(markdownText)
+
+// Markdown Document with custom image provider
+MarkdownDocumentView(markdownText, imageDataProvider: myProvider)
+
+// Inline Markdown text
+MarkdownText("**Bold** and *italic* with `code`")
+
+// Parse Markdown into structured blocks
+let blocks = MarkdownBlockParser.parse(markdownText)
+
+// Split/join document at ## headings
+var sections = MarkdownSectionParser.split(markdownText)
+sections[0].body = "Updated content"
+let result = MarkdownSectionParser.join(sections)
+
+// CoverFlow
+CoverFlow(items: myItems, focusedID: $selectedID, cardSize: CGSize(width: 200, height: 280), coordinateSpace: "mySpace", onSelect: { item in ... }) { item in
+    MyCardView(item: item)
+}
+
+// Neon text
+Text("Hello")
+    .neon(.hero)
+
+// Action button
+ActionButton(systemName: "play.fill", size: 52) {
+    startGame()
+}
+
+// Glass overlay
+GlassOverlayScaffold(
+    title: "Edit",
+    cancelAction: OverlayAction(icon: "xmark", label: "Cancel") { dismiss() },
+    primaryAction: OverlayAction(icon: "checkmark", label: "Save") { save() }
+) {
+    // content
+}
+
+// Background picture
+BackgroundPicture(imageName: "background", size: screenSize)
+```
+
+## Markdown Module — Three-Layer Architecture
+
+```
+┌────────────────────────────────────────────────┐
+│  Presentation Layer (SwiftUI / UIKit)          │
+│  MarkdownEditorView · MarkdownDocumentView     │
+│  MarkdownText                                  │
+├────────────────────────────────────────────────┤
+│  Rendering Layer (NSTextStorage)               │
+│  MarkdownTextStorage · MarkdownTheme           │
+├────────────────────────────────────────────────┤
+│  Parsing Layer (Pure Logic, no UI deps)        │
+│  MarkdownBlockParser · MarkdownSectionParser   │
+└────────────────────────────────────────────────┘
+```
+
+Dependencies flow downward only. The parsing layer has zero framework
+dependencies and runs on all platforms (Linux, macOS, iOS).
+
+### Editor Features
+
+The `MarkdownEditorView` provides:
+
+- **Live syntax highlighting** — colours for headings, bold, italic, code,
+  strikethrough, links, lists, task lists, blockquotes, and horizontal rules
+- **Context-menu formatting** — Bold, Italic, Code, Strikethrough, Link, List,
+  and Heading actions appear in the standard iOS edit menu
+- **Theme support** — light and dark presets via `MarkdownTheme`, or create
+  custom themes with hex colour strings
+- **Cursor preservation** — cursor position is maintained across SwiftUI
+  re-renders
+- **Accessibility** — labelled as "Markdown editor" with a descriptive hint
+
+### Supported Markdown Syntax
+
+| Syntax | Rendering | Highlighting |
+|--------|-----------|--------------|
+| `# H1` / `## H2` / `### H3` | ✅ | ✅ |
+| `**bold**` / `__bold__` | ✅ | ✅ |
+| `*italic*` / `_italic_` | ✅ | ✅ |
+| `` `code` `` | ✅ | ✅ |
+| `~~strikethrough~~` | ✅ | ✅ |
+| `[text](url)` | ✅ | ✅ |
+| `![alt](url)` | ✅ | ✅ |
+| `- item` / `* item` | ✅ | ✅ |
+| `1. ordered` | ✅ | ✅ |
+| `- [ ]` / `- [x]` | — | ✅ |
+| `> blockquote` | ✅ | ✅ |
+| `---` / `***` | ✅ | ✅ |
+| `` ``` `` fenced code | — | ✅ |
+
+## Build & Test
+
+```bash
+cd shared-ui
+swift build       # Builds platform-independent parts on Linux/macOS
+swift test        # Runs parser + regex pattern tests (113 tests)
+
+# Full build (requires macOS with Xcode for SwiftUI/UIKit components)
+# SwiftUI components are conditionally compiled with #if canImport(SwiftUI)
+```
+
+## Architecture
+
+- **Platform-independent:** `CoverFlowKernel`, `MarkdownBlockParser`,
+  `MarkdownSectionParser`, `MarkdownTheme` – build on Linux and macOS
+- **SwiftUI-dependent:** All view components (`CoverFlow`, `ActionButton`,
+  `GlassOverlayScaffold`, `MarkdownDocumentView`, `MarkdownText`) –
+  require macOS/iOS with SwiftUI, guarded by `#if canImport(SwiftUI)`
+- **UIKit-dependent:** `MarkdownEditorView`, `MarkdownTextStorage` –
+  require iOS, guarded by `#if canImport(UIKit)`
+- **Zero external dependencies:** Consistent with mono-repo policy
+
+## Related Documentation
+
+- [Markdown Editor Architecture](docs/concepts/markdown-editor-architecture.md)
+- [Markdown Editor Interview](docs/concepts/markdown-editor-interview.md)
+- [ADR-0001: Markdown Module Architecture](docs/decisions/ADR-0001-markdown-module-architecture.md)
+- [Backlog](docs/todo.md)
+- [Concept: Shared Components](../docs/concepts/shared-components.md)
+- [ADR-0006: Shared Swift Package](../docs/decisions/ADR-0006-shared-swift-package.md)
+- [Implementation Plan](docs/plans/plan-001-markdown-product-maturity.md)
+- [Architecture Overview](../docs/architecture/overview.md)
